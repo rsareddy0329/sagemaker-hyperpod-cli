@@ -6,7 +6,7 @@ import yaml
 import click
 import boto3
 import sys
-from jinja2 import Template
+from jinja2.sandbox import SandboxedEnvironment
 from kubernetes import client, config
 from pathlib import Path
 from typing import Dict, Any, Tuple, Optional
@@ -319,8 +319,14 @@ def _submit_k8s_resources(custom_api, rendered_yaml: str) -> None:
 
 
 def _render_k8s_template(template_content: str, config_data: Dict[str, Any]) -> str:
-    """Render Kubernetes template with configuration data."""
-    template = Template(template_content)
+    """Render Kubernetes template with configuration data.
+
+    Uses a sandboxed Jinja2 environment to restrict template operations
+    to safe constructs like variable substitution, filters, loops, and
+    conditionals. Access to Python internals is not permitted.
+    """
+    env = SandboxedEnvironment()
+    template = env.from_string(template_content)
     return template.render(**config_data)
 
 
